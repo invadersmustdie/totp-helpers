@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+
+require "json"
+
+out = `ykman oath code 2>&1`
+
+creds = out.split("\n").inject([]) do |ret, line|
+  m = line.match(/^(\S+)\s+(\d+)$/)
+  ret << {:name => m[1], :number => m[2]} if m
+
+  ret
+end
+
+items = []
+
+creds.each_with_index do |cred, idx|
+  items << {
+    "uid" => cred[:name],
+    "title" => cred[:name],
+    "subtitle" => cred[:number],
+    "autocomplete" => cred[:number],
+    "text" => {
+      "copy" => cred[:number]}
+  }
+end
+
+puts JSON.pretty_generate({"items" => items})

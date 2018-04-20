@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+
+def copy_token(cred)
+  `echo #{cred[:number]}|pbcopy`
+  puts "copied token for '#{cred[:name]}' into clipboard - have a nice day"
+end
+
+filter = ARGV[0]
+
+`ykman --version`
+if $?.exitstatus != 0
+  puts "Failed to call ykman. Not installed?"
+  exit 1
+end
+
+out = `ykman oath code 2>&1`
+
+creds = out.split("\n").inject([]) do |ret, line|
+  m = line.match(/^(\S+)\s+(\d+)$/)
+  ret << {:name => m[1], :number => m[2]} if m
+
+  ret
+end
+
+if filter
+  creds = creds.select { |c| c[:name] =~ /#{filter}/i }
+end
+
+if creds.empty?
+  puts "no otp detected"
+  exit 1
+end
+
+creds.each_with_index do |cred, idx|
+  puts "#{idx} - #{cred[:name]}"
+end
+
+if creds.size == 1
+  copy_token(creds.first)
+else
+  print "selection > "
+  selection = $stdin.gets.strip
+
+  if selection !~ /^\d+$/
+    puts "invalid input"
+    exit 1
+  end
+
+  cred = creds[selection.to_i]
+
+  if !cred
+    puts "invalid selection"
+    exit 1
+  end
+
+  copy_token(cred)
+end
